@@ -11,9 +11,9 @@ then the slam pose and groundtruth pose will be published to rviz. The slam pose
 at the same time, in the terminal you can see the transformation matrix and the RMSE error of slam and ground truth.
 
 ## how to run
-first, make your slam can publish geometry_msgs::PoseStamped message when it gets each keyframe pose.(for example, when your slam system finishes or almost finish, you extract all the poses into a vector) set the topic of the publisher as "keyframe_pose".
-second, run rviz. use `rosrun rviz rviz`. set `fix_keyframe` as `my_frame` then press `Add` button , choose `MarkerArrary` and press `OK`.
-third, run this package `roslaunch data_registration run_regi.launch`
+first, make your slam can publish geometry_msgs::PoseStamped message when it gets each keyframe pose.(for example, when your slam system finishes or almost finish, you extract all the poses into a vector) set the topic of the publisher as "keyframe_pose". <br>
+second, run rviz. use `rosrun rviz rviz`. set `fix_keyframe` as `my_frame` then press `Add` button , choose `MarkerArrary` and press `OK`. <br>
+third, run this package `roslaunch data_registration run_regi.launch` <br>
 fourth, run your slam system
 
 ## note
