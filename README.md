@@ -1,4 +1,4 @@
-##objection
+## objection
 This code aims at compare slam output and groundtruth(in fact, it is estimated ground truth from `state_groundtruth_estimate0` folder) from euroc dataset.
 After the slam gets poses of each keyframe, this package will try to find which groundtruth's timestamp is the same as each slam keyframe pose's timestamp(timestamp difference smaller than 1ms will be seen as the same timestamp, you can set it in the program by yourself). 
 After it finds all the poses that matching, it will do 3d registration according to 
@@ -10,13 +10,13 @@ then the slam pose and groundtruth pose will be published to rviz. The slam pose
 
 at the same time, in the terminal you can see the transformation matrix and the RMSE error of slam and ground truth.
 
-##how to run
+## how to run
 first, make your slam can publish geometry_msgs::PoseStamped message when it gets each keyframe pose.(for example, when your slam system finishes or almost finish, you extract all the poses into a vector) set the topic of the publisher as "keyframe_pose".
 second, run rviz. use `rosrun rviz rviz`. set `fix_keyframe` as `my_frame` then press `Add` button , choose `MarkerArrary` and press `OK`.
 third, run this package `roslaunch data_registration run_regi.launch`
 fourth, run your slam system
 
-##note
+## note
 1:You'd better stop your own slam system's visualizer before using the rviz.
 2:You need modify after how many keyframes you want to do registration in `run_regi.launch` by yourself. The variable is called `do_registration_threshold`
 3:You need specify the location of your ground truth csv file in `run_regi.launch`.
