@@ -28,5 +28,5 @@ at the same time, in the terminal you can see the transformation matrix and the 
 4:You can choose not to visualize the poses in rviz if you just want to see RMSE error by setting the variable `visualization_choice_` to `visualize` or something else.
 
 ## result example
-
+![alt text](https://github.com/zhaozhongch/slam_groundtruth_comparison/blob/master/result_example/example.png)
 
