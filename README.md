@@ -1,3 +1,7 @@
+
+# slam_groundtruth_comparison
+used to compare slam pose output and ground truth. ROS needed
+
 ## objection
 This code aims at compare slam output and groundtruth(in fact, it is estimated ground truth from `state_groundtruth_estimate0` folder) from euroc dataset.
 After the slam gets poses of each keyframe, this package will try to find which groundtruth's timestamp is the same as each slam keyframe pose's timestamp(timestamp difference smaller than 1ms will be seen as the same timestamp, you can set it in the program by yourself). 
@@ -23,6 +27,6 @@ at the same time, in the terminal you can see the transformation matrix and the 
 3:You need specify the location of your ground truth csv file in `run_regi.launch`. <br>
 4:You can choose not to visualize the poses in rviz if you just want to see RMSE error by setting the variable `visualization_choice_` to `visualize` or something else.
 
-# slam_groundtruth_comparison
-used to compare slam pose output and ground truth. ROS needed
+## result example
+
 
