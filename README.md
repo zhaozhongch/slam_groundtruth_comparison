@@ -29,4 +29,5 @@ at the same time, in the terminal you can see the transformation matrix and the 
 
 ## result example
 ![alt text](https://github.com/zhaozhongch/slam_groundtruth_comparison/blob/master/result_example/example.png)
+![alt text](https://github.com/zhaozhongch/slam_groundtruth_comparison/blob/master/result_example/print_result.png)
 
