@@ -2,15 +2,15 @@
 
 using namespace std;
 
-fst::fst(ros::NodeHandle& nh){
-    sub_slam = nh.subscribe("keyframe_pose", 100, &fst::slam_pose_callback, this);
+FST::FST(ros::NodeHandle& nh){
+    sub_slam_ = nh.subscribe("keyframe_pose", 100, &FST::SlamPoseCallback, this);
 
-    if(nh.getParam("do_registration_threshold", do_registration_threshold)){
-        ROS_INFO("when synchronized message number is more than %d, we will do registration. Modify this number in launch file", do_registration_threshold);
+    if(nh.getParam("do_registration_threshold", do_registration_threshold_)){
+        ROS_INFO("when synchronized message number is more than %d, we will do registration. Modify this number in launch file", do_registration_threshold_);
     }
     else{
-        do_registration_threshold = 500;
-        ROS_INFO("don't know when to do registration, set default as %d", do_registration_threshold);
+        do_registration_threshold_ = 500;
+        ROS_INFO("don't know when to do registration, set default as %d", do_registration_threshold_);
     }
 
     if(nh.getParam("groundtruth_csv_file_address_", groundtruth_csv_file_address_)){
@@ -21,20 +21,20 @@ fst::fst(ros::NodeHandle& nh){
     }
 };
 
-void fst::slam_pose_callback(const geometry_msgs::PoseStamped::ConstPtr& msgs){
-    all_slam.push_back(*msgs);
+void FST::SlamPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msgs){
+    all_slam_.push_back(*msgs);
     
-    msg_count++;
-    ROS_INFO("get msgs %d", msg_count);
+    msg_count_++;
+    ROS_INFO("get msgs %d", msg_count_);
     
-    if(msg_count >= do_registration_threshold){
+    if(msg_count_ >= do_registration_threshold_){
         ROS_INFO("start findding the same timestamp of two message");
-        keep_spin = false;
-        sub_slam.shutdown();//do not subscribe message anymore
+        keep_spin_ = false;
+        sub_slam_.shutdown();//do not subscribe message anymore
     }
 };
 
-void fst::read_gt_pose_from_csv(){
+void FST::ReadGTPoseFromCsv(){
     bool skip_first_row  = true;
     int  sequence         = 0;
     ifstream groundtruth_file(groundtruth_csv_file_address_.c_str());
@@ -105,38 +105,38 @@ void fst::read_gt_pose_from_csv(){
                 }
             }
             sequence = 0;
-            all_gt.push_back(groundtruth);
+            all_gt_.push_back(groundtruth);
         }
     }    
 };
 
-void fst::find(){
+void FST::Find(){
     std::vector<geometry_msgs::PoseStamped>::iterator it_gt, it_slam;
 
     geometry_msgs::PoseStamped one_gt, one_slam;
 
     int from_last = 0;
     int count     = 0;
-    std::cout<<"all slam size "<<all_slam.size()<<", gt size "<<all_gt.size()<<std::endl;
-    for(it_slam = all_slam.begin(); it_slam != all_slam.end(); it_slam++){
+    std::cout<<"all slam size "<<all_slam_.size()<<", gt size "<<all_gt_.size()<<std::endl;
+    for(it_slam = all_slam_.begin(); it_slam != all_slam_.end(); it_slam++){
         one_slam = *it_slam;
         double slam_pose_time = one_slam.header.stamp.sec + 1e-9 * one_slam.header.stamp.nsec;
-        for(it_gt = all_gt.begin() + from_last; it_gt != all_gt.end(); it_gt++){
+        for(it_gt = all_gt_.begin() + from_last; it_gt != all_gt_.end(); it_gt++){
             count++;
             one_gt = *it_gt;
             double gt_pose_time = one_gt.header.stamp.sec + 1e-9 * one_gt.header.stamp.nsec;
             //if the timestamp of slam and ground truth is smaller than a certain value, we think they have the same timestamp
-            if(std::abs(slam_pose_time - gt_pose_time)<same_timestamp_threshold){
+            if(std::abs(slam_pose_time - gt_pose_time)<same_timestamp_threshold_){
                 //std::cout<<"find same time"<<std::endl;
-                same_gt.push_back(one_gt);
-                same_slam.push_back(one_slam);
+                same_gt_.push_back(one_gt);
+                same_slam_.push_back(one_slam);
                 from_last = count;
                 break;
             }
         }
-        if(count >= all_gt.size())
+        if(count >= all_gt_.size())
             count = 0; //sometimes the groundtruth doesn't have data when the keyframe starts, whcih means some keyframes cannot find the corresponding groundtruth that shares the same timestamp so the count should go back to 0
-        if(same_gt.size() == do_registration_threshold)
+        if(same_gt_.size() == do_registration_threshold_)
             break;
     }
 }

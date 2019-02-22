@@ -1,19 +1,20 @@
 #include "registration.h"
 
-registration::registration(ros::NodeHandle& nh_){
-    nh = nh_;
+Registration::Registration(ros::NodeHandle& nh){
+    nh_ = nh;
 
-    pub_MA = nh.advertise<visualization_msgs::MarkerArray>("visualization_marker_array",10);
+    pub_MA_   = nh_.advertise<visualization_msgs::MarkerArray>("visualization_marker_array",10);
+    pub_cost_ = nh_.advertise<std_msgs::Float64>("cost", 10);
 
-    if(nh.getParam("do_registration_threshold", do_registration_threshold)){
-        ROS_INFO("got registration threshold %d. Modify this number in launch file", do_registration_threshold);
+    if(nh_.getParam("do_registration_threshold", do_registration_threshold_)){
+        ROS_INFO("got registration threshold %d. Modify this number in launch file", do_registration_threshold_);
     }
     else{
         ROS_FATAL("don't know when to do registration");
     }
 
     
-    nh.getParam("visualization_choice_", visualization_choice_);
+    nh_.getParam("visualization_choice_", visualization_choice_);
     //if(visualizationChoice.c_str() == "visualize") this seems not work
     // std::cout<<"visualization choice "<<visualizationChoice.c_str()<<std::endl;
     if(visualization_choice_.compare(std::string("visualize")) == 0){
@@ -22,7 +23,7 @@ registration::registration(ros::NodeHandle& nh_){
 }
 
 //do registration algorithm is according to http://graphics.stanford.edu/courses/cs348a-17-winter/Papers/quaternion.pdf
-void registration::calculate_transformation_registration(){
+void Registration::CalculateTransformationRegistration(){
     int countflag = 0;
 
     geometry_msgs::Point point_gt, point_slam;
@@ -34,10 +35,10 @@ void registration::calculate_transformation_registration(){
     Eigen::Matrix4d m_bias_slam;
     Eigen::Matrix4d M = Eigen::Matrix4d::Zero();
 
-    ave_point_gt    = getAverage3Dpoint(poses_gt);
-    ave_point_slam  = getAverage3Dpoint(poses_slam);
+    ave_point_gt    = get_average_3d_point(poses_gt_);
+    ave_point_slam  = get_average_3d_point(poses_slam_);
 
-    for(it_gt=poses_gt.begin(),it_slam = poses_slam.begin() ; it_gt!=poses_gt.end() && it_slam!=poses_slam.end() ; it_gt++, it_slam++){
+    for(it_gt=poses_gt_.begin(),it_slam = poses_slam_.begin() ; it_gt!=poses_gt_.end() && it_slam!=poses_slam_.end() ; it_gt++, it_slam++){
         countflag++;
         point_gt   = (*it_gt).pose.position;
         point_slam = (*it_slam).pose.position;
@@ -54,8 +55,8 @@ void registration::calculate_transformation_registration(){
         bias_point_slam.y = point_slam.y - ave_point_slam.y; 
         bias_point_slam.z = point_slam.z - ave_point_slam.z;
 
-        m_bias_gt   = point3D2MatrixForm_Q(bias_point_gt);
-        m_bias_slam = point3D2MatrixForm_P(bias_point_slam);
+        m_bias_gt   = Point3D2MatrixForm_Q(bias_point_gt);
+        m_bias_slam = Point3D2MatrixForm_P(bias_point_slam);
         //std::cout<<"m_bias_gt \n"<<m_bias_gt<<std::endl;
         //std::cout<<"m_bias_slam \n "<<m_bias_slam<<std::endl;
         M += m_bias_slam.transpose() * m_bias_gt;
@@ -74,10 +75,10 @@ void registration::calculate_transformation_registration(){
     Eigen::Vector4cd max_e_vector = es.eigenvectors().col(Imax); //eigenvector, two column four rows, complex form
     Eigen::Vector4d max_e_vector_real = max_e_vector.real();
     //get the optimal rotation
-    optimal_transformation.orientation.w = max_e_vector_real[0];
-    optimal_transformation.orientation.x = max_e_vector_real[1];
-    optimal_transformation.orientation.y = max_e_vector_real[2];
-    optimal_transformation.orientation.z = max_e_vector_real[3];
+    optimal_transformation_.orientation.w = max_e_vector_real[0];
+    optimal_transformation_.orientation.x = max_e_vector_real[1];
+    optimal_transformation_.orientation.y = max_e_vector_real[2];
+    optimal_transformation_.orientation.z = max_e_vector_real[3];
 
     //get the optimal translation after we get the rotation. Need change quaternion to rotation matrix to do matrix multiplication
     Eigen::Quaterniond q;
@@ -95,21 +96,21 @@ void registration::calculate_transformation_registration(){
     //cout<<"R is "<<"\n"<<R<<endl;
     Eigen::Vector3d b = ave_point_gt_eigen - R*ave_point_slam_eigen;//formula １３
     std::cout<<"translation vector \n "<<b<<std::endl;
-    optimal_transformation.position.x = b(0);
-    optimal_transformation.position.y = b(1);
-    optimal_transformation.position.z = b(2);
+    optimal_transformation_.position.x = b(0);
+    optimal_transformation_.position.y = b(1);
+    optimal_transformation_.position.z = b(2);
 }
 
-void registration::apply_registration(){
+void Registration::ApplyRegistration(){
     std::vector<geometry_msgs::PoseStamped>::iterator it;
     //transformation to tf form
     tf::Transform tf_optimal_transformation;
-    tf::poseMsgToTF(optimal_transformation, tf_optimal_transformation);
+    tf::poseMsgToTF(optimal_transformation_, tf_optimal_transformation);
     //geometry point to tf point so that we can apply transformation(matrix) multiplication
     geometry_msgs::Point msg_position_slam, msg_position_slam_after_registration;
     geometry_msgs::PoseStamped  msg_pose_slam_after_registration;
     tf::Vector3 tf_position_slam;
-    for(it = poses_slam.begin(); it != poses_slam.end(); it++){
+    for(it = poses_slam_.begin(); it != poses_slam_.end(); it++){
         msg_position_slam = (*it).pose.position;
         tf::pointMsgToTF(msg_position_slam,tf_position_slam);
         tf::Vector3 tf_position_slam_after_registration = tf_optimal_transformation * tf_position_slam;
@@ -119,69 +120,80 @@ void registration::apply_registration(){
         msg_pose_slam_after_registration.pose.orientation = (*it).pose.orientation;
         msg_pose_slam_after_registration.pose.position    = msg_position_slam_after_registration;
         msg_pose_slam_after_registration.header           = (*it).header;
-        poses_slam_after_registration.push_back(msg_pose_slam_after_registration);
+        poses_slam_after_registration_.push_back(msg_pose_slam_after_registration);
     }
 
-    regi_done = true;
+    regi_done_ = true;
 }
 
-void registration::pub_marker(){
+void Registration::PubMarker(){
 
     visualization_msgs::MarkerArray markerArr;
     
     std::vector<geometry_msgs::PoseStamped>::iterator it_gt, it_slam;
 
-    set_marker_basics(marker1);//set frameid, marker type, timestamp, lifetime, scale and shape
-    set_marker_basics(marker2);
+    set_marker_basics(marker1_);//set frameid, marker type, timestamp, lifetime, scale and shape
+    set_marker_basics(marker2_);
 
-    set_marker_namespace(marker1, "slam_poses");
-    set_marker_namespace(marker2, "groundtruth_poses");
+    set_marker_namespace(marker1_, "slam_poses");
+    set_marker_namespace(marker2_, "groundtruth_poses");
 
-    set_marker_color(marker1, std::string("red"));//can choose red, blue, green, white and black
-    set_marker_color(marker2, std::string("blue"));
+    set_marker_color(marker1_, std::string("red"));//can choose red, blue, green, white and black
+    set_marker_color(marker2_, std::string("blue"));
 
     int count = 0;
-    for(it_gt=poses_gt.begin(),it_slam = poses_slam_after_registration.begin() ; it_gt!=poses_gt.end() && it_slam!=poses_slam_after_registration.end() ; it_gt++, it_slam++){
-        set_marker_id(marker1, count);
-        set_marker_id(marker2, count);
+    for(it_gt=poses_gt_.begin(),it_slam = poses_slam_after_registration_.begin() ; it_gt!=poses_gt_.end() && it_slam!=poses_slam_after_registration_.end() ; it_gt++, it_slam++){
+        set_marker_id(marker1_, count);
+        set_marker_id(marker2_, count);
 
-        set_marker_pose(marker1, *(it_slam));
-        set_marker_pose(marker2, *(it_gt));
+        set_marker_pose(marker1_, *(it_slam));
+        set_marker_pose(marker2_, *(it_gt));
 
-        markerArr.markers.push_back(marker1);
-        markerArr.markers.push_back(marker2);
+        markerArr.markers.push_back(marker1_);
+        markerArr.markers.push_back(marker2_);
         count++;
     }
 
     usleep(500000);
-    pub_MA.publish(markerArr);
+    pub_MA_.publish(markerArr);
 }
 
-double registration::show_error(){
+double Registration::ShowError(){
     std::vector<geometry_msgs::PoseStamped>::iterator it_gt, it_slam;
-    for(it_gt=poses_gt.begin(),it_slam = poses_slam_after_registration.begin() ; it_gt != poses_gt.end() && it_slam!=poses_slam_after_registration.end() ; it_gt++, it_slam++){
+    for(it_gt=poses_gt_.begin(),it_slam = poses_slam_after_registration_.begin() ; it_gt != poses_gt_.end() && it_slam!=poses_slam_after_registration_.end() ; it_gt++, it_slam++){
         geometry_msgs::PoseStamped slam, gt;
         slam = *it_slam;
         gt   = *it_gt;
-        error += sqrt((slam.pose.position.x - gt.pose.position.x) * (slam.pose.position.x - gt.pose.position.x) 
+        error_ += sqrt((slam.pose.position.x - gt.pose.position.x) * (slam.pose.position.x - gt.pose.position.x) 
                  + (slam.pose.position.y - gt.pose.position.y) * (slam.pose.position.y - gt.pose.position.y)
                  + (slam.pose.position.z - gt.pose.position.z) * (slam.pose.position.z - gt.pose.position.z));
     }
-    ROS_INFO("the translation RMSE error between slam and ground truth is...... %f", error);
+    ROS_INFO("the translation RMSE error between slam and ground truth is...... %f", error_);
 }
 
-void registration::set_slam_pose(const std::vector<geometry_msgs::PoseStamped>& slam_pose){
-    poses_slam = slam_pose;
+void Registration::PubCost(){
+    std_msgs::Float64 cost;
+    cost.data = error_;
+    ros::Rate ra(10);
+
+    ra.sleep();
+    pub_cost_.publish(cost);
+    ra.sleep();
+    ROS_INFO("error published........");
+}
+
+void Registration::set_slam_pose(const std::vector<geometry_msgs::PoseStamped>& slam_pose){
+    poses_slam_ = slam_pose;
 };
 
-void registration::set_gt_pose(const std::vector<geometry_msgs::PoseStamped>& gt_pose){
-    poses_gt   = gt_pose;
+void Registration::set_gt_pose(const std::vector<geometry_msgs::PoseStamped>& gt_pose){
+    poses_gt_   = gt_pose;
 };
 
 
 
 //the following is private memeber function
-geometry_msgs::Point registration::getAverage3Dpoint(const std::vector<geometry_msgs::PoseStamped>& poses){
+geometry_msgs::Point Registration::get_average_3d_point(const std::vector<geometry_msgs::PoseStamped>& poses){
     geometry_msgs::Point ave;
     int count = 0;
     ave.x     = 0.0;
@@ -200,7 +212,7 @@ geometry_msgs::Point registration::getAverage3Dpoint(const std::vector<geometry_
     return ave;
 };
 
-Eigen::Matrix4d registration::point3D2MatrixForm_Q(geometry_msgs::Point point){
+Eigen::Matrix4d Registration::Point3D2MatrixForm_Q(geometry_msgs::Point point){
     Eigen::Matrix4d m = Eigen::Matrix4d::Zero();
 
     m(1,0) =  point.x;
@@ -222,7 +234,7 @@ Eigen::Matrix4d registration::point3D2MatrixForm_Q(geometry_msgs::Point point){
     return m;    
 };
 
-Eigen::Matrix4d registration::point3D2MatrixForm_P(geometry_msgs::Point point)
+Eigen::Matrix4d Registration::Point3D2MatrixForm_P(geometry_msgs::Point point)
 {
     Eigen::Matrix4d m = Eigen::Matrix4d::Zero();
     m(1,0) =  point.x;
@@ -244,7 +256,7 @@ Eigen::Matrix4d registration::point3D2MatrixForm_P(geometry_msgs::Point point)
     return m;
 }
 
-void registration::set_marker_basics(visualization_msgs::Marker& marker){
+void Registration::set_marker_basics(visualization_msgs::Marker& marker){
 
     // Set the frame ID and timestamp.  See the TF tutorials for information on these.
     marker.header.frame_id = "/my_frame";
@@ -268,11 +280,11 @@ void registration::set_marker_basics(visualization_msgs::Marker& marker){
 // Set the namespace and id for this marker.  This serves to create a unique ID
 // Any marker sent with the same namespace and id will overwrite the old one
 // markers with the different namespace or different id won't be overwrited 
-void registration::set_marker_namespace(visualization_msgs::Marker& marker, std::string name){
+void Registration::set_marker_namespace(visualization_msgs::Marker& marker, std::string name){
     marker.ns = name.c_str();
 };
 
-void registration::set_marker_id(visualization_msgs::Marker& marker, int id){
+void Registration::set_marker_id(visualization_msgs::Marker& marker, int id){
     marker.id = id;
 }
 
@@ -283,7 +295,7 @@ enum colorChoice{
     white, //3 
     black //4 
 };
-void registration::set_marker_color(visualization_msgs::Marker& marker, std::string name){
+void Registration::set_marker_color(visualization_msgs::Marker& marker, std::string name){
     //use map so that I can use switch case for string. switch case can not be used for string
     std::map<std::string, colorChoice> choice;
 
@@ -334,7 +346,7 @@ void registration::set_marker_color(visualization_msgs::Marker& marker, std::str
 }
 
 // Set the pose of the marker.  This is a full 6DOF pose relative to the frame/time specified in the header
-void registration::set_marker_pose(visualization_msgs::Marker& marker, geometry_msgs::PoseStamped pose){
+void Registration::set_marker_pose(visualization_msgs::Marker& marker, geometry_msgs::PoseStamped pose){
     marker.pose.position.x = pose.pose.position.x;
     marker.pose.position.y = pose.pose.position.y;
     marker.pose.position.z = pose.pose.position.z;

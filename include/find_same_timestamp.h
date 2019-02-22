@@ -8,25 +8,25 @@
 #include <fstream>
 #include <sstream>
 
-class fst{
+class FST{
 public:
-    fst(ros::NodeHandle& nh);
-    void slam_pose_callback(const geometry_msgs::PoseStamped::ConstPtr& msgs);
-    void read_gt_pose_from_csv();
-    void find();
+    FST(ros::NodeHandle& nh);
+    void SlamPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msgs);
+    void ReadGTPoseFromCsv();
+    void Find();
     const inline std::vector<geometry_msgs::PoseStamped> get_samestamped_pose_groundtruth(){
-        return same_gt;
+        return same_gt_;
     };
     const inline std::vector<geometry_msgs::PoseStamped> get_samestamped_pose_slam(){
-        return same_slam;
+        return same_slam_;
     }
-    bool keep_spin = true;
+    bool keep_spin_ = true;
 private:
     /**subscriber will subscribe the pose from ground truth and slam then try to find the msg that share the similar(smaller than 3 ms) timestamp**/
-    ros::Subscriber sub_slam;
-    std::vector<geometry_msgs::PoseStamped> all_gt, all_slam, same_gt, same_slam;
+    ros::Subscriber sub_slam_;
+    std::vector<geometry_msgs::PoseStamped> all_gt_, all_slam_, same_gt_, same_slam_ ;
     std::string groundtruth_csv_file_address_;
-    int do_registration_threshold;
-    int msg_count = 0;
-    double same_timestamp_threshold = 0.001; //1ms as offset threshold
+    int do_registration_threshold_; 
+    int msg_count_ = 0;
+    double same_timestamp_threshold_ = 0.001; //1ms as offset threshold
 };
