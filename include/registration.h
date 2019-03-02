@@ -20,10 +20,10 @@ public:
     void CalculateTransformationRegistration();
     void ApplyRegistration();
     void PubMarker();
-    void PubCost();
     double ShowError();
     void set_slam_pose(const std::vector<geometry_msgs::PoseStamped>& slam_pose);
     void set_gt_pose(const std::vector<geometry_msgs::PoseStamped>& gt_pose);
+    void set_match_count(const int match_count);
     std::string visualization_choice_;
 private:
     ros::Publisher pub_MA_;//pub_markerArray
@@ -31,6 +31,7 @@ private:
     ros::NodeHandle nh_;
     double error_ = 0;
     int do_registration_threshold_;
+    int match_count_;
     bool regi_done_ = false;
 
     std::vector<geometry_msgs::PoseStamped> poses_gt_;

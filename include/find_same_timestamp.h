@@ -20,6 +20,9 @@ public:
     const inline std::vector<geometry_msgs::PoseStamped> get_samestamped_pose_slam(){
         return same_slam_;
     }
+    const inline int get_match_count(){
+        return match_count_;
+    }
     bool keep_spin_ = true;
 private:
     /**subscriber will subscribe the pose from ground truth and slam then try to find the msg that share the similar(smaller than 3 ms) timestamp**/
@@ -28,5 +31,6 @@ private:
     std::string groundtruth_csv_file_address_;
     int do_registration_threshold_; 
     int msg_count_ = 0;
+    int match_count_ = 0;
     double same_timestamp_threshold_ = 0.001; //1ms as offset threshold
 };

@@ -168,18 +168,7 @@ double Registration::ShowError(){
                  + (slam.pose.position.y - gt.pose.position.y) * (slam.pose.position.y - gt.pose.position.y)
                  + (slam.pose.position.z - gt.pose.position.z) * (slam.pose.position.z - gt.pose.position.z));
     }
-    ROS_INFO("the translation RMSE error between slam and ground truth is...... %f", error_);
-}
-
-void Registration::PubCost(){
-    std_msgs::Float64 cost;
-    cost.data = error_;
-    ros::Rate ra(10);
-
-    ra.sleep();
-    pub_cost_.publish(cost);
-    ra.sleep();
-    ROS_INFO("error published........");
+    ROS_INFO("the average translation RMSE error between slam and ground truth is...... %f", error_/match_count_);
 }
 
 void Registration::set_slam_pose(const std::vector<geometry_msgs::PoseStamped>& slam_pose){
@@ -190,7 +179,9 @@ void Registration::set_gt_pose(const std::vector<geometry_msgs::PoseStamped>& gt
     poses_gt_   = gt_pose;
 };
 
-
+void Registration::set_match_count(const int match_count){
+    match_count_ = match_count;
+};
 
 //the following is private memeber function
 geometry_msgs::Point Registration::get_average_3d_point(const std::vector<geometry_msgs::PoseStamped>& poses){

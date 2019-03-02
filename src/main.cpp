@@ -30,6 +30,7 @@ int main(int nargs, char *args[]){
 
     regi.set_slam_pose(match.get_samestamped_pose_slam());
     regi.set_gt_pose(match.get_samestamped_pose_groundtruth());
+    regi.set_match_count(match.get_match_count());
 
     regi.CalculateTransformationRegistration();
     regi.ApplyRegistration();
@@ -37,6 +38,4 @@ int main(int nargs, char *args[]){
     if(regi.visualization_choice_.compare(std::string("visualize")) == 0)
         regi.PubMarker();
     regi.ShowError();
-
-    regi.PubCost();
 }

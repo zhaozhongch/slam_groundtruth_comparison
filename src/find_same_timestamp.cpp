@@ -39,7 +39,7 @@ void FST::ReadGTPoseFromCsv(){
     int  sequence         = 0;
     ifstream groundtruth_file(groundtruth_csv_file_address_.c_str());
     if(!groundtruth_file){
-        ROS_FATAL("cannot find the file");
+        ROS_FATAL("cannot find the file that contains groundtruth");
         exit(0);
     }
     else{
@@ -128,6 +128,7 @@ void FST::Find(){
             //if the timestamp of slam and ground truth is smaller than a certain value, we think they have the same timestamp
             if(std::abs(slam_pose_time - gt_pose_time)<same_timestamp_threshold_){
                 //std::cout<<"find same time"<<std::endl;
+                match_count_++;
                 same_gt_.push_back(one_gt);
                 same_slam_.push_back(one_slam);
                 from_last = count;
@@ -135,8 +136,9 @@ void FST::Find(){
             }
         }
         if(count >= all_gt_.size())
-            count = 0; //sometimes the groundtruth doesn't have data when the keyframe starts, whcih means some keyframes cannot find the corresponding groundtruth that shares the same timestamp so the count should go back to 0
+            count = from_last; //sometimes the groundtruth doesn't have data when the keyframe starts, or groundtruth is lost at some part, or keyframe and groundtruth just won't be in the same_timestamp_threshold, whcih means some keyframes cannot find the corresponding groundtruth that shares the same timestamp so the count should go back to from_last
         if(same_gt_.size() == do_registration_threshold_)
             break;
     }
+    std::cout<<"among "<<do_registration_threshold_<<"keyframes, we found "<<match_count_<<" keyframes that has correspondence in groundtruth data"<<std::endl;
 }
