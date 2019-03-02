@@ -22,7 +22,7 @@ at the same time, in the terminal you can see the transformation matrix and the 
 1:You'd better stop your own slam system's visualizer before using the rviz. <br>
 2:You need modify after how many keyframes you want to do registration in `run_regi.launch` by yourself. The variable is called `do_registration_threshold` <br>
 3:You need specify the location of your ground truth csv file in `run_regi.launch`. <br>
-4:You can choose not to visualize the poses in rviz if you just want to see RMSE error by setting the variable `visualization_choice_` to `visualize` or something else.
+4:You can choose not to visualize the poses in rviz if you just want to see RMSE error by setting the variable `visualization_choice_` to `visualize` or something else.<br>
 5:If there are some keyframes that don't have corresponding groundtruth, don't worry, they'll be skiped
 
 ## result example
