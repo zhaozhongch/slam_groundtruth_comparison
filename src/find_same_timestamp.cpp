@@ -140,5 +140,5 @@ void FST::Find(){
         if(same_gt_.size() == do_registration_threshold_)
             break;
     }
-    std::cout<<"among "<<do_registration_threshold_<<"keyframes, we found "<<match_count_<<" keyframes that has correspondence in groundtruth data"<<std::endl;
+    std::cout<<"among "<<do_registration_threshold_<<" keyframes, we found "<<match_count_<<" keyframes that has correspondence in groundtruth data"<<std::endl;
 }
