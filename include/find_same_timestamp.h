@@ -30,6 +30,7 @@ private:
     ros::Subscriber sub_slam_;
     std::vector<geometry_msgs::PoseStamped> all_gt_, all_slam_, same_gt_, same_slam_ ;
     std::string groundtruth_csv_file_address_;
+    std::string sub_topic_name_;
     int do_registration_threshold_; 
     int msg_count_ = 0;
     int msg_count_before_ = 0;

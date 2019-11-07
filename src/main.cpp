@@ -16,11 +16,16 @@ int main(int nargs, char *args[]){
     FST match(nh);
     ros::Rate r(500);
     bool keep_spin = true;
-    while(keep_spin){
+    while(keep_spin && ros::ok()){
         match.CheckTime();
         keep_spin = match.keep_spin_; //when we get the required number of keyframe pose, we'll stop spin
         ros::spinOnce();
         r.sleep();
+    }
+
+    if(!ros::ok()){
+        ROS_INFO("exit...........");
+        return 0;
     }
 
     match.ReadGTPoseFromCsv();

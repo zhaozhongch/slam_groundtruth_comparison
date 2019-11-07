@@ -3,9 +3,22 @@
 using namespace std;
 
 FST::FST(ros::NodeHandle& nh){
-    sub_slam_ = nh.subscribe("/geopose_update", 100, &FST::SlamPoseCallback, this); //normally the topic name is keyframe_pose
+    if(nh.getParam("same_timestamp_threshold_", same_timestamp_threshold_)){
+        ROS_INFO("timestamp difference between slam and groundtruth samller than %f will be seen as the same", same_timestamp_threshold_);
+    }
+    else{
+        ROS_INFO("You didn't set the same_timestamp_threshold, default is 3ms");
+    }
 
-    if(nh.getParam("do_registration_threshold", do_registration_threshold_)){
+    if(nh.getParam("sub_topic_name_", sub_topic_name_)){
+        ROS_INFO("get the topic name %s", sub_topic_name_.c_str());
+    }
+    else{
+        sub_topic_name_ = std::string("/geopose_update");
+        ROS_INFO("no topic name given, the default is /geopose_update");
+    }
+
+    if(nh.getParam("do_registration_threshold_", do_registration_threshold_)){
         //set a large threshold or a threshold smaller than 1 will lead the data_registration use all the msg it receives after slam stops
         if(do_registration_threshold_<1){
             ROS_INFO("register all the message the system receives after the slam stops");
@@ -26,6 +39,8 @@ FST::FST(ros::NodeHandle& nh){
     else{
         ROS_INFO("no file address input");
     }
+
+    sub_slam_ = nh.subscribe(sub_topic_name_, 100, &FST::SlamPoseCallback, this); //normally the topic name is keyframe_pose
 };
 
 void FST::SlamPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msgs){
