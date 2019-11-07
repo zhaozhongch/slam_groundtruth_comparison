@@ -17,6 +17,7 @@ int main(int nargs, char *args[]){
     ros::Rate r(500);
     bool keep_spin = true;
     while(keep_spin){
+        match.CheckTime();
         keep_spin = match.keep_spin_; //when we get the required number of keyframe pose, we'll stop spin
         ros::spinOnce();
         r.sleep();

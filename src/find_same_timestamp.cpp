@@ -3,10 +3,17 @@
 using namespace std;
 
 FST::FST(ros::NodeHandle& nh){
-    sub_slam_ = nh.subscribe("keyframe_pose", 100, &FST::SlamPoseCallback, this);
+    sub_slam_ = nh.subscribe("/geopose_update", 100, &FST::SlamPoseCallback, this); //normally the topic name is keyframe_pose
 
     if(nh.getParam("do_registration_threshold", do_registration_threshold_)){
-        ROS_INFO("when synchronized message number is more than %d, we will do registration. Modify this number in launch file", do_registration_threshold_);
+        //set a large threshold or a threshold smaller than 1 will lead the data_registration use all the msg it receives after slam stops
+        if(do_registration_threshold_<1){
+            ROS_INFO("register all the message the system receives after the slam stops");
+            do_registration_threshold_ = 999999;
+        }
+        else{
+            ROS_INFO("when synchronized message number is more than %d, we will do registration. Modify this number in launch file", do_registration_threshold_);
+        }
     }
     else{
         do_registration_threshold_ = 500;
@@ -49,17 +56,17 @@ void FST::ReadGTPoseFromCsv(){
             istringstream temp_one_row_gt(one_row_gt);
             geometry_msgs::PoseStamped groundtruth; 
             string string_gt;
-            while(getline(temp_one_row_gt, string_gt, ',')){
+            while(getline(temp_one_row_gt, string_gt, ' ')){
                 switch(sequence){
                     case 0:{
                         //I convert the data time forcely twice, which is not good, but in this case it will be OK
                         //I convert a timestamp with nanosecond to int second part and int nanosecond part
-                        double msg_timestamp = (double)atof(string_gt.c_str());//directly to integer will beyond the int limit, we can use longlong int
-                        msg_timestamp = 1e-9 * msg_timestamp;
-                        double sec, nsec;
-                        nsec = modf(msg_timestamp, &sec);
-                        groundtruth.header.stamp.sec = int(sec);
-                        groundtruth.header.stamp.nsec = int(1e9 * nsec);
+                        double msg_timestamp = (double)atof(string_gt.c_str());
+                        //std::cout<<"timestamp of image "<<msg_timestamp<<std::endl;
+                        msg_timestamp = 1e9 * msg_timestamp;
+                        uint64_t int_time = uint64_t(msg_timestamp);
+                        groundtruth.header.stamp.sec =  int_time/1e9;;
+                        groundtruth.header.stamp.nsec = int_time%1000000000;
                         sequence++;
                     }
                         break;
@@ -80,23 +87,23 @@ void FST::ReadGTPoseFromCsv(){
                     }
                         break;
                     case 4:{
-                        //the case 4,5,6,7 is quternion w,x,y,z
-                        groundtruth.pose.orientation.w = (double)atof(string_gt.c_str());
-                        sequence++;
-                    }
-                        break;
-                    case 5:{
+                        //the case 4,5,6,7 is quternion x,y,z,w for eth
                         groundtruth.pose.orientation.x = (double)atof(string_gt.c_str());
                         sequence++;
                     }
                         break;
-                    case 6:{
+                    case 5:{
                         groundtruth.pose.orientation.y = (double)atof(string_gt.c_str());
                         sequence++;
                     }
                         break;
-                    case 7:{
+                    case 6:{
                         groundtruth.pose.orientation.z = (double)atof(string_gt.c_str());
+                        sequence++;
+                    }
+                        break;
+                    case 7:{
+                        groundtruth.pose.orientation.w = (double)atof(string_gt.c_str());
                         sequence++;
                     }
                         break;
@@ -140,5 +147,24 @@ void FST::Find(){
         if(same_gt_.size() == do_registration_threshold_)
             break;
     }
-    std::cout<<"among "<<do_registration_threshold_<<" keyframes, we found "<<match_count_<<" keyframes that has correspondence in groundtruth data"<<std::endl;
+    std::cout<<"among "<<msg_count_<<" keyframes, we found "<<match_count_<<" keyframes that has correspondence in groundtruth data"<<std::endl;
+}
+
+void FST::CheckTime(){
+    if(msg_count_==1){
+        last_timestamp_msg_received_ = ros::Time::now().toSec();
+    }
+    else if(msg_count_>=1 && msg_count_ == msg_count_before_){
+        double time_diff = ros::Time::now().toSec() - last_timestamp_msg_received_;
+        last_timestamp_msg_received_ = ros::Time::now().toSec();
+        time_no_new_msg += time_diff;
+        if(time_no_new_msg>max_wait_time_){
+            ROS_INFO("no message reveive in %f seconds, we think the slam has stopped so we'll do registration now", max_wait_time_);
+            keep_spin_ = false;
+            sub_slam_.shutdown();
+        }
+    }
+    if(msg_count_ != msg_count_before_)
+        time_no_new_msg = 0.0;
+    msg_count_before_ = msg_count_;
 }
