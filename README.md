@@ -22,11 +22,11 @@ at the same time, in the terminal you can see the transformation matrix and the 
 1: You need specify the location of your ground truth csv/txt file in the launch file by changing `groundtruth_csv_file_address_`. <br>
 2: You need specify the format of your groundtruth format. Only supprt euroc format and tum format. The format of euroc dataset's groundtruth is 
 ```
-timestamp(in nano second) positonX postionY postionZ QuaternionW QuaternionX QuaternionY QuaternionZ
+timestamp(in nano second),positonX,postionY,postionZ,QuaternionW,QuaternionX,QuaternionY,QuaternionZ
 ```
 The format of tum dataset's groundtruth is 
 ```
-timestamp(in second),positonX,postionY,postionZ,QuaternionX,QuaternionY,QuaternionZ,QuaternionW
+timestamp(in second) positonX postionY postionZ QuaternionX QuaternionY QuaternionZ QuaternionW
 ```
 3: (No need to change) You can modify after how many poses you want to do registration in launch file by yourself. The variable is called `do_registration_threshold_`. If this number is smaller than 1 or if this number if too large, for example, you want to do registration after getting 1000 pose message but your slam system only publishes 900 at the very end, then the system will do registration after it didn't receive slam message more than 10 seconds. <br>
 4: (No need to change) The parameter `same_timestamp_threshold_` is used to locate which two poses(one from slam one from the groundtruth) are seens having the same timestamp. The timestamp from slam may never be able to match the totally same timestamp as the groundtruth. The default value of is `0.003` which means if two poses' timestamp is smaller than 3ms they will match.
