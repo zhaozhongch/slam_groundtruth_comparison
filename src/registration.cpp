@@ -4,22 +4,10 @@ Registration::Registration(ros::NodeHandle& nh){
     nh_ = nh;
 
     pub_MA_   = nh_.advertise<visualization_msgs::MarkerArray>("visualization_marker_array",10);
-    pub_cost_ = nh_.advertise<std_msgs::Float64>("cost", 10);
+    pub_cost_ = nh_.advertise<std_msgs::Float64>("cost", 10);   
 
-    if(nh_.getParam("do_registration_threshold", do_registration_threshold_)){
-        ROS_INFO("got registration threshold %d. Modify this number in launch file", do_registration_threshold_);
-    }
-    else{
-        ROS_FATAL("don't know when to do registration");
-    }
-
+    ROS_INFO("if you want to visualize the result, please run run_rviz,launch first.");
     
-    nh_.getParam("visualization_choice_", visualization_choice_);
-    //if(visualizationChoice.c_str() == "visualize") this seems not work
-    // std::cout<<"visualization choice "<<visualizationChoice.c_str()<<std::endl;
-    if(visualization_choice_.compare(std::string("visualize")) == 0){
-         ROS_INFO("if you want to visualize the result, please run rviz first. The world frame name now is called my_frame and markerArray with ground truth and slam pose will be published");
-    }
 }
 
 //do registration algorithm is according to http://graphics.stanford.edu/courses/cs348a-17-winter/Papers/quaternion.pdf
@@ -42,11 +30,6 @@ void Registration::CalculateTransformationRegistration(){
         countflag++;
         point_gt   = (*it_gt).pose.position;
         point_slam = (*it_slam).pose.position;
-
-        // if(countflag < 5){
-        //     std::cout<<std::setprecision(15)<< (*it_gt).header.stamp.sec + 1e-9 * (*it_gt).header.stamp.nsec<<std::endl; 
-        //     std::cout<<std::setprecision(15)<< (*it_slam).header.stamp.sec + 1e-9 * (*it_slam).header.stamp.nsec<<std::endl; 
-        // }
         
         bias_point_gt.x   = point_gt.x   - ave_point_gt.x;
         bias_point_gt.y   = point_gt.y   - ave_point_gt.y;
@@ -65,7 +48,7 @@ void Registration::CalculateTransformationRegistration(){
 
     Eigen::EigenSolver<Eigen::Matrix4d> es(M);
     Eigen::Vector4d  e_value;//eigen value
-    e_value = es.eigenvalues().real();//es.eigenvalues()返回复数对的Ｖector4cd， 用.real()提取实数部分
+    e_value = es.eigenvalues().real();//es.eigenvalues()return Ｖector4cd， use.real() to extract real number part
 
     //Vector4d Etest = es.eigenvalues().imag();//image should be 0
 

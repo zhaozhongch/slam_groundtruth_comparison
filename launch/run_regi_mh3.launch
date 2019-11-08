@@ -1,9 +1,9 @@
 <launch>
 <param name="name" value="regi_node"/>
-<param name="do_registration_threshold_" type="int" value="500" />
-<param name="visualization_choice_" type="string" value="visualize" />
+<param name="do_registration_threshold_" type="int" value="0" />
 <param name="same_timestamp_threshold_" type="double" value="0.003" />
-<param name="sub_topic_name_" type="string" value="geopose_update" />
+<param name="sub_topic_name_" type="string" value="/geopose" />
+<param name="groundtruth_format_" type="string" value="euroc_format" />
 <param name="groundtruth_csv_file_address_" type="string" value="/home/zhaozhong/dataset/euroc/MH_03_medium/state_groundtruth_estimate0/data.csv" />
 <node name="regi_node" pkg = "data_registration" type = "regi_node" output="screen">
 </node>

@@ -40,6 +40,16 @@ FST::FST(ros::NodeHandle& nh){
         ROS_INFO("no file address input");
     }
 
+    if(nh.getParam("groundtruth_format_", groundtruth_format_)){
+        ROS_INFO("get the groundtruth format (Only support euroc format and tum format), it is %s", groundtruth_format_.c_str());
+    }
+    else{
+        groundtruth_format_ = std::string("tum_format");
+        ROS_INFO("didn't input the ground truth format, default is tum format");
+    }
+
+
+
     sub_slam_ = nh.subscribe(sub_topic_name_, 100, &FST::SlamPoseCallback, this); //normally the topic name is keyframe_pose
 };
 
@@ -71,60 +81,118 @@ void FST::ReadGTPoseFromCsv(){
             istringstream temp_one_row_gt(one_row_gt);
             geometry_msgs::PoseStamped groundtruth; 
             string string_gt;
-            while(getline(temp_one_row_gt, string_gt, ' ')){
-                switch(sequence){
-                    case 0:{
-                        //I convert the data time forcely twice, which is not good, but in this case it will be OK
-                        //I convert a timestamp with nanosecond to int second part and int nanosecond part
-                        double msg_timestamp = (double)atof(string_gt.c_str());
-                        //std::cout<<"timestamp of image "<<msg_timestamp<<std::endl;
-                        msg_timestamp = 1e9 * msg_timestamp;
-                        uint64_t int_time = uint64_t(msg_timestamp);
-                        groundtruth.header.stamp.sec =  int_time/1e9;;
-                        groundtruth.header.stamp.nsec = int_time%1000000000;
-                        sequence++;
+            if(groundtruth_format_ == "tum_format"){
+                while(getline(temp_one_row_gt, string_gt, ' ')){
+                    switch(sequence){
+                        case 0:{
+                            double msg_timestamp = (double)atof(string_gt.c_str());
+                            //std::cout<<"timestamp of image "<<msg_timestamp<<std::endl;
+                            msg_timestamp = 1e9 * msg_timestamp;
+                            uint64_t int_time = uint64_t(msg_timestamp);
+                            groundtruth.header.stamp.sec =  int_time/1e9;;
+                            groundtruth.header.stamp.nsec = int_time%1000000000;
+                            sequence++;
+                        }
+                            break;
+                        case 1:{
+                            //the case 1,2,3 is position x,y,z
+                            groundtruth.pose.position.x = (double)atof(string_gt.c_str());
+                            sequence++;
+                        }
+                            break;
+                        case 2:{
+                            groundtruth.pose.position.y = (double)atof(string_gt.c_str());
+                            sequence++;
+                        }
+                            break;
+                        case 3:{
+                            groundtruth.pose.position.z = (double)atof(string_gt.c_str());
+                            sequence++;
+                        }
+                            break;
+                        case 4:{
+                            //the case 4,5,6,7 is quternion x,y,z,w for tum
+                            groundtruth.pose.orientation.x = (double)atof(string_gt.c_str());
+                            sequence++;
+                        }
+                            break;
+                        case 5:{
+                            groundtruth.pose.orientation.y = (double)atof(string_gt.c_str());
+                            sequence++;
+                        }
+                            break;
+                        case 6:{
+                            groundtruth.pose.orientation.z = (double)atof(string_gt.c_str());
+                            sequence++;
+                        }
+                            break;
+                        case 7:{
+                            groundtruth.pose.orientation.w = (double)atof(string_gt.c_str());
+                            sequence++;
+                        }
+                            break;
+                        default:
+                            break;
                     }
-                        break;
-                    case 1:{
-                        //the case 1,2,3 is position x,y,z
-                        groundtruth.pose.position.x = (double)atof(string_gt.c_str());
-                        sequence++;
-                    }
-                        break;
-                    case 2:{
-                        groundtruth.pose.position.y = (double)atof(string_gt.c_str());
-                        sequence++;
-                    }
-                        break;
-                    case 3:{
-                        groundtruth.pose.position.z = (double)atof(string_gt.c_str());
-                        sequence++;
-                    }
-                        break;
-                    case 4:{
-                        //the case 4,5,6,7 is quternion x,y,z,w for eth
-                        groundtruth.pose.orientation.x = (double)atof(string_gt.c_str());
-                        sequence++;
-                    }
-                        break;
-                    case 5:{
-                        groundtruth.pose.orientation.y = (double)atof(string_gt.c_str());
-                        sequence++;
-                    }
-                        break;
-                    case 6:{
-                        groundtruth.pose.orientation.z = (double)atof(string_gt.c_str());
-                        sequence++;
-                    }
-                        break;
-                    case 7:{
-                        groundtruth.pose.orientation.w = (double)atof(string_gt.c_str());
-                        sequence++;
-                    }
-                        break;
-                    default:
-                        break;
                 }
+            }
+            else if(groundtruth_format_ == "euroc_format"){
+                while(getline(temp_one_row_gt, string_gt, ',')){
+                    switch(sequence){
+                        case 0:{
+                        double msg_timestamp = (double)atof(string_gt.c_str());//directly to integer will beyond the int limit, we can use longlong int
+                        msg_timestamp = 1e-9 * msg_timestamp;
+                        double sec, nsec;
+                        nsec = modf(msg_timestamp, &sec);
+                        groundtruth.header.stamp.sec = int(sec);
+                        groundtruth.header.stamp.nsec = int(1e9 * nsec);
+                        sequence++;
+                        }
+                            break;
+                        case 1:{
+                            //the case 1,2,3 is position x,y,z
+                            groundtruth.pose.position.x = (double)atof(string_gt.c_str());
+                            sequence++;
+                        }
+                            break;
+                        case 2:{
+                            groundtruth.pose.position.y = (double)atof(string_gt.c_str());
+                            sequence++;
+                        }
+                            break;
+                        case 3:{
+                            groundtruth.pose.position.z = (double)atof(string_gt.c_str());
+                            sequence++;
+                        }
+                            break;
+                        case 4:{
+                            //the case 4,5,6,7 is quternion w, x, y, z for euroc
+                            groundtruth.pose.orientation.w = (double)atof(string_gt.c_str());
+                            sequence++;
+                        }
+                            break;
+                        case 5:{
+                            groundtruth.pose.orientation.x = (double)atof(string_gt.c_str());
+                            sequence++;
+                        }
+                            break;
+                        case 6:{
+                            groundtruth.pose.orientation.y = (double)atof(string_gt.c_str());
+                            sequence++;
+                        }
+                            break;
+                        case 7:{
+                            groundtruth.pose.orientation.z = (double)atof(string_gt.c_str());
+                            sequence++;
+                        }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            else{
+                ROS_ERROR("format not support. Must be tum or euroc format");
             }
             sequence = 0;
             all_gt_.push_back(groundtruth);

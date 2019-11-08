@@ -41,7 +41,6 @@ int main(int nargs, char *args[]){
     regi.CalculateTransformationRegistration();
     regi.ApplyRegistration();
 
-    if(regi.visualization_choice_.compare(std::string("visualize")) == 0)
-        regi.PubMarker();
+    regi.PubMarker();
     regi.ShowError();
 }
