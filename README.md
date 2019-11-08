@@ -1,7 +1,7 @@
 
 ## objection
-This code aims at compare slam output and groundtruth from different datasets.
-After the slam gets poses of each keyframe, this package will try to find which groundtruth's timestamp is the same(or similar) as each slam keyframe pose's timestamp.
+This code aims at compare slam output and groundtruth.
+After the slam gets poses of at a certain timestamp, this package will try to find which groundtruth's timestamp is the same(or similar) as each slam pose's timestamp.
 After it finds all the poses that matching, it will do 3d registration according to 
 
 http://graphics.stanford.edu/courses/cs348a-17-winter/Papers/quaternion.pdf
